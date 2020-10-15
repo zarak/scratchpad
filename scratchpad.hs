@@ -87,6 +87,11 @@ startState = M.fromList [(0, 0), (1, 1)]
 
 
 -- Fixed points and Y combinators with memoization
+--
+-- Note that fix' x = x:
+-- Let x = f (fix' f), then
+-- fix' x = fix' (f (fix' f)) = fix' (fix' f) = x
+--
 fix' :: (a -> a) -> a
 fix' f = f (fix' f)
 
@@ -94,6 +99,9 @@ factorial1 :: (Int -> Int) -> Int -> Int
 factorial1 _ 0 = 1
 factorial1 f n = n * f (n - 1)
 
+-- Note that the fixed point of factorial1 is the standard
+-- naive, recursive implementation of factorial.
+-- That is, factorial1 factorial = factorial.
 factorialF :: Int -> Int
 factorialF = fix' factorial1
 
@@ -115,6 +123,8 @@ sumF :: Int -> Int
 sumF = fix' sum1
 
 
+-- Memoization works with lists + lazy evaluation, 
+-- but what if we desire something more general than (Int -> Int)?
 memoizeInt :: (Int -> Int) -> Int -> Int
 memoizeInt f = \m -> values !! m
     where values = [f m | m <- [0..]]
@@ -131,6 +141,9 @@ fibInf'' = fibBuilder' fibInf''
 fibMInf = fibBuilder' (memoizeInt fibMInf)
 fibMInf' = fix' (fibBuilder' . memoizeInt)
 
+-- No insertion, so this doesn't work efficiently
+-- Attempting to insert causes the compiler to complain
+-- about infinite types
 memoize :: Ord a => (a -> b) -> a -> b
 memoize f = 
     let store = M.empty
@@ -145,6 +158,7 @@ memoize f =
 fibMem = fix' (fibBuilder' . memoize)
 
 
+-- Memoization with unsafe coerce
 memoize' :: Ord a => (a -> b) -> IO (a -> b)
 memoize' f = do
     ref <- newIORef M.empty
